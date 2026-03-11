@@ -1,5 +1,5 @@
 import express from "express";
-import { add, subtract, multiply, divide } from "./calculator";
+import { add, subtract, multiply, divide } from "./calculator.js";
 
 const app = express();
 app.use(express.json());
