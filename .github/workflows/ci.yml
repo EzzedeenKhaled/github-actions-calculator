@@ -1,0 +1,60 @@
+# Name of the workflow
+name: CI - Run Tests
+
+# Triggers
+on:
+  # Run this workflow whenever code is pushed to main or develop
+  push:
+    branches:
+      - main
+      - develop
+  # Also run on any pull request (regardless of target branch)
+  # This catches bugs BEFORE they are merged
+  pull_request:
+
+  # Allow triggering manually from the GitHub Actions UI
+  # Useful for debugging without needing to push a commit
+  workflow_dispatch:
+
+# Jobs
+jobs:
+  test:
+    # The type of runner (vm) to run this job on
+    runs-on: ubuntu-latest
+
+    # Matrix Strategy
+    # Run the same job across multiple versions of Node.js
+    # This ensures our code works across different environments
+    strategy:
+      matrix:
+        node-version: [18, 20, 22]
+
+    steps:
+      # STEP 1: Check out the repositoy
+      # Without this, the runner has no code to work with
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # STEP 2: Install the correct Node.js version
+      # node-version comes from our matrix - runs 3 times with 18, 20, 22
+      - name: Set up Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          # Cache npm dependencies to speed up future runs
+          # Without caching, npm install runs from scratch every time
+          cache: "npm"
+
+      # STEP 3: Install dependencies
+      # npm ci is preferred over npm install in CI environments:
+      # - Installs exact versions from package-lock.json
+      # - Fails if package-lock.json is out of sync
+      # - Faster than npm install
+      - name: Install dependencies
+        run: npm ci
+
+      # STEP 4: Run tests
+      # If any test fails, this step fail, and the job is marked as failed
+      # Github will show a red X on the commit and block PR merging
+      - name: Run tests
+        run: npm test
